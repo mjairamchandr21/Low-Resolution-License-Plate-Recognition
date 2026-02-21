@@ -23,7 +23,7 @@ Usage (Colab):
 
 import argparse
 import os
-import csv
+import zipfile
 import cv2
 import numpy as np
 import torch
@@ -169,23 +169,35 @@ def generate_submission(model_path: str, test_path: str,
             "confidence": f"{confidence:.4f}",
         })
 
-    # Write CSV
-    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
-    with open(output_path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["track_id", "plate_text", "confidence"])
-        writer.writeheader()
-        writer.writerows(rows)
+    # Write predictions.txt in competition format:
+    # track_id,plate_text;confidence   (no header)
+    out_dir     = os.path.dirname(os.path.abspath(output_path))
+    txt_path    = os.path.join(out_dir, "predictions.txt")
+    zip_path    = os.path.join(out_dir, "submission.zip")
+
+    os.makedirs(out_dir, exist_ok=True)
+
+    with open(txt_path, "w") as f:
+        for r in rows:
+            f.write(f"{r['track_id']},{r['plate_text']};{r['confidence']}\n")
+
+    # Zip predictions.txt directly (not inside a folder)
+    import zipfile
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.write(txt_path, arcname="predictions.txt")
 
     print(f"\n{'='*55}")
-    print(f"Submission saved : {output_path}")
-    print(f"Total tracks     : {len(rows)}")
+    print(f"predictions.txt : {txt_path}")
+    print(f"submission.zip  : {zip_path}")
+    print(f"Total tracks    : {len(rows)}")
     if len(rows) > 0:
-        print(f"Length-enforced  : {len_enforced} ({100*len_enforced/len(rows):.1f}%)")
-        print(f"Wrong length     : {wrong_len}  ({100*wrong_len/len(rows):.1f}%)")
+        print(f"Length-enforced : {len_enforced} ({100*len_enforced/len(rows):.1f}%)")
+        print(f"Wrong length    : {wrong_len}  ({100*wrong_len/len(rows):.1f}%)")
     print(f"{'='*55}")
     print("\nFirst 5 predictions:")
     for r in rows[:5]:
-        print(f"  {r['track_id']}  →  {r['plate_text']}  (conf={r['confidence']})")
+        print(f"  {r['track_id']},{r['plate_text']};{r['confidence']}")
+
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
