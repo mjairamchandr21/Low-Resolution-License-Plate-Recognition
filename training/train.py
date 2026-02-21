@@ -156,34 +156,58 @@ def train():
     print("PHASE 2: Scenario-B fine-tune (5 epochs, lower LR)")
     print("=" * 60)
 
-    scen_b_train = LPRDataset(DATA_PATH, augment=True,  scenario_filter="Scenario-B")
-    scen_b_val   = LPRDataset(DATA_PATH, augment=False, scenario_filter="Scenario-B")
+    # Auto-detect the correct Scenario-B folder name
+    available_scenarios = [
+        d for d in os.listdir(DATA_PATH)
+        if os.path.isdir(os.path.join(DATA_PATH, d))
+    ]
+    print(f"Available scenarios: {available_scenarios}")
 
-    sb_train_size = int(0.9 * len(scen_b_train))
-    sb_val_size   = len(scen_b_train) - sb_train_size
-    sb_train_ds, sb_val_ds_idx = random_split(
-        scen_b_train, [sb_train_size, sb_val_size],
-        generator=torch.Generator().manual_seed(42)
-    )
-    sb_val_ds_clean = torch.utils.data.Subset(scen_b_val, sb_val_ds_idx.indices)
+    scen_b_name = None
+    for s in available_scenarios:
+        if "b" in s.lower() or "B" in s:
+            scen_b_name = s
+            break
 
-    sb_train_loader = DataLoader(sb_train_ds, batch_size=64, shuffle=True,
-                                 collate_fn=collate_fn, num_workers=2)
-    sb_val_loader   = DataLoader(sb_val_ds_clean, batch_size=64, shuffle=False,
-                                 collate_fn=collate_fn, num_workers=2)
+    if scen_b_name is None:
+        print("⚠️  No Scenario-B folder found — skipping fine-tune phase.")
+        print(f"   Scenarios found: {available_scenarios}")
+    else:
+        print(f"Using scenario: '{scen_b_name}'")
 
-    # Load best phase-1 weights before fine-tuning
-    model.load_state_dict(
-        torch.load(f"{SAVE_DIR}/crnn_best_main.pth", map_location=DEVICE)
-    )
+        scen_b_train = LPRDataset(DATA_PATH, augment=True,  scenario_filter=scen_b_name)
+        scen_b_val   = LPRDataset(DATA_PATH, augment=False, scenario_filter=scen_b_name)
 
-    run_training(model, sb_train_loader, sb_val_loader,
-                 epochs=5, lr=1e-4, tag="scenB")
+        print(f"Scenario-B samples: {len(scen_b_train)}")
+
+        if len(scen_b_train) == 0:
+            print("⚠️  Scenario-B dataset is empty — check DATA_PATH and folder names.")
+        else:
+            sb_train_size = int(0.9 * len(scen_b_train))
+            sb_val_size   = len(scen_b_train) - sb_train_size
+            sb_train_ds, sb_val_idx = random_split(
+                scen_b_train, [sb_train_size, sb_val_size],
+                generator=torch.Generator().manual_seed(42)
+            )
+            sb_val_clean = torch.utils.data.Subset(scen_b_val, sb_val_idx.indices)
+
+            sb_train_loader = DataLoader(sb_train_ds, batch_size=64, shuffle=True,
+                                         collate_fn=collate_fn, num_workers=2)
+            sb_val_loader   = DataLoader(sb_val_clean, batch_size=64, shuffle=False,
+                                         collate_fn=collate_fn, num_workers=2)
+
+            # Load best phase-1 weights before fine-tuning
+            model.load_state_dict(
+                torch.load(f"{SAVE_DIR}/crnn_best_main.pth", map_location=DEVICE)
+            )
+
+            run_training(model, sb_train_loader, sb_val_loader,
+                         epochs=5, lr=1e-4, tag="scenB")
 
     print("\n🏁 Training complete.")
     print(f"   Best main model  → {SAVE_DIR}/crnn_best_main.pth")
     print(f"   Best ScenB model → {SAVE_DIR}/crnn_best_scenB.pth")
-    print("   Use crnn_best_scenB.pth for submission.")
+    print("   Use crnn_best_scenB.pth for submission (or crnn_best_main.pth if scenB skipped).")
 
 
 if __name__ == "__main__":
