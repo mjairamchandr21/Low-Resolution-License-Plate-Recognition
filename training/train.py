@@ -70,7 +70,7 @@ def run_training(model, train_loader, val_loader,
     criterion  = nn.CTCLoss(blank=0, zero_infinity=True)
     optimizer  = optim.Adam(model.parameters(), lr=lr)
     scheduler  = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="max", factor=0.5, patience=3, verbose=True
+        optimizer, mode="max", factor=0.5, patience=3
     )
 
     best_val   = 0.0
