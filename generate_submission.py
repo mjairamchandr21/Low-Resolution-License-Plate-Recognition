@@ -74,9 +74,20 @@ def get_test_tracks(test_root: str):
     """
     Discover all track folders in the flat test structure.
     Returns sorted list of (track_id, [image_paths]).
+    Accepts any .png or .jpg image inside each track folder.
     """
+    IMAGE_EXTS = (".png", ".jpg", ".jpeg")
     tracks = []
-    for entry in sorted(os.listdir(test_root)):
+    entries = sorted(os.listdir(test_root))
+
+    # Print first-track contents for diagnostics
+    for entry in entries:
+        track_path = os.path.join(test_root, entry)
+        if os.path.isdir(track_path):
+            print(f"[DEBUG] First track '{entry}' files: {os.listdir(track_path)[:8]}")
+            break
+
+    for entry in entries:
         track_path = os.path.join(test_root, entry)
         if not os.path.isdir(track_path):
             continue
@@ -84,7 +95,7 @@ def get_test_tracks(test_root: str):
         images = sorted([
             os.path.join(track_path, f)
             for f in os.listdir(track_path)
-            if f.startswith("lr-") and f.endswith(".png")
+            if os.path.splitext(f)[1].lower() in IMAGE_EXTS
         ])
 
         if images:
