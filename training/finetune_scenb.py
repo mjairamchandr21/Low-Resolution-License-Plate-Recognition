@@ -52,9 +52,14 @@ train_loader = DataLoader(tr_split, batch_size=64, shuffle=True,
 val_loader   = DataLoader(va_clean,  batch_size=64, shuffle=False,
                           collate_fn=collate_fn, num_workers=2)
 
-# Load best Phase-1 model
+# Load best available checkpoint:
+# - Prefer crnn_best_scenB.pth (continue from previous fine-tune run)
+# - Fall back to crnn_best_main.pth (first run)
+scenb_ckpt = f"{SAVE_DIR}/crnn_best_scenB.pth"
+main_ckpt  = f"{SAVE_DIR}/crnn_best_main.pth"
+checkpoint  = scenb_ckpt if os.path.exists(scenb_ckpt) else main_ckpt
+
 model = CRNN(NUM_CLASSES, dropout=0.3).to(DEVICE)
-checkpoint = f"{SAVE_DIR}/crnn_best_main.pth"
 model.load_state_dict(torch.load(checkpoint, map_location=DEVICE))
 print(f"Loaded checkpoint: {checkpoint}")
 
