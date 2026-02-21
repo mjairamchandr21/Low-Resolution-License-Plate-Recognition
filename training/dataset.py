@@ -66,7 +66,18 @@ class LPRDataset(Dataset):
         img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
 
         # Resize to fixed size
-        img = cv2.resize(img, (128, 32))  # width=128, height=32
+        h, w = img.shape
+        new_h = 32
+        scale = new_h / h
+        new_w = int(w * scale)
+        img = cv2.resize(img, (new_w, new_h))
+
+        # pad to width 128
+        if new_w < 128:
+            pad = 128 - new_w
+            img = np.pad(img, ((0,0),(0,pad)), mode='constant', constant_values=0)
+        else:
+            img = cv2.resize(img, (128, 32))
 
         img = img.astype(np.float32) / 255.0
         img = np.expand_dims(img, axis=0)  # (1, H, W)
