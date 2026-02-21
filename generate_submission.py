@@ -40,10 +40,21 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 # ── Image preprocessing ──────────────────────────────────────────────────────
 
 def preprocess_image(img_path: str) -> torch.Tensor:
-    """Aspect-ratio resize to H=32, pad W to 128. Returns (1,1,32,128)."""
+    """Aspect-ratio resize to H=32, pad W to 128.
+    Applies JPEG denoising for .jpg inputs to reduce compression artefacts.
+    Returns (1,1,32,128).
+    """
     img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
     if img is None:
         raise FileNotFoundError(f"Cannot read: {img_path}")
+
+    # Denoise JPEG artefacts before resizing (helps model confidence)
+    if img_path.lower().endswith((".jpg", ".jpeg")):
+        img = cv2.fastNlMeansDenoising(img, h=10, templateWindowSize=7, searchWindowSize=21)
+        # Mild sharpening to recover edges lost to compression
+        kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
+        img    = cv2.filter2D(img, -1, kernel)
+        img    = np.clip(img, 0, 255).astype(np.uint8)
 
     h, w   = img.shape
     new_h  = 32
@@ -59,6 +70,7 @@ def preprocess_image(img_path: str) -> torch.Tensor:
     img = img.astype(np.float32) / 255.0
     img = np.expand_dims(img, axis=0)                           # (1,H,W)
     return torch.tensor(img, dtype=torch.float32).unsqueeze(0)  # (1,1,H,W)
+
 
 
 # ── Model forward ────────────────────────────────────────────────────────────
