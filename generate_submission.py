@@ -76,8 +76,14 @@ def preprocess_image(img_path: str) -> torch.Tensor:
 # ── Model forward ────────────────────────────────────────────────────────────
 
 @torch.no_grad()
-def get_logits(model: CRNN, img_tensor: torch.Tensor) -> torch.Tensor:
-    return model(img_tensor.to(DEVICE)).squeeze(0)   # (T, C)
+def get_logits(model: CRNN, img_tensor: torch.Tensor,
+              model2: CRNN = None) -> torch.Tensor:
+    """Forward pass. If model2 is given, returns averaged logits (ensemble)."""
+    logits = model(img_tensor.to(DEVICE)).squeeze(0)        # (T, C)
+    if model2 is not None:
+        logits2 = model2(img_tensor.to(DEVICE)).squeeze(0)  # (T, C)
+        logits  = (logits + logits2) / 2.0
+    return logits
 
 
 # ── Test track discovery ─────────────────────────────────────────────────────
@@ -119,12 +125,20 @@ def get_test_tracks(test_root: str):
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 def generate_submission(model_path: str, test_path: str,
-                        output_path: str, beam_width: int = 10):
+                        output_path: str, beam_width: int = 10,
+                        model_path2: str = None):
 
-    print(f"Loading model : {model_path}")
-    model = CRNN(NUM_CLASSES).to(DEVICE)
+    print(f"Loading model  : {model_path}")
+    model = CRNN(NUM_CLASSES, dropout=0.3).to(DEVICE)
     model.load_state_dict(torch.load(model_path, map_location=DEVICE))
     model.eval()
+
+    model2 = None
+    if model_path2:
+        print(f"Loading model2 : {model_path2}  (ensemble)")
+        model2 = CRNN(NUM_CLASSES, dropout=0.3).to(DEVICE)
+        model2.load_state_dict(torch.load(model_path2, map_location=DEVICE))
+        model2.eval()
 
     tracks = get_test_tracks(test_path)
     print(f"Found {len(tracks)} test tracks  |  device={DEVICE}  |  "
@@ -144,7 +158,7 @@ def generate_submission(model_path: str, test_path: str,
         for img_path in images:
             try:
                 tensor = preprocess_image(img_path)
-                logits_list.append(get_logits(model, tensor))
+                logits_list.append(get_logits(model, tensor, model2))
             except Exception:
                 pass
 
@@ -206,7 +220,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="LPR competition submission generator")
     parser.add_argument(
         "--model_path", type=str,
-        default="/content/drive/MyDrive/LPR_Project/crnn_best.pth",
+        default="/content/drive/MyDrive/LPR_Project/crnn_best_scenB.pth",
+    )
+    parser.add_argument(
+        "--model_path2", type=str, default=None,
+        help="Optional second model for ensemble (logits averaged before beam search)",
     )
     parser.add_argument(
         "--test_path", type=str,
@@ -215,8 +233,8 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--output", type=str,
-        default="/content/drive/MyDrive/LPR_Project/submission.csv",
-        help="Path to write submission CSV",
+        default="/content/drive/MyDrive/LPR_Project/predictions.txt",
+        help="Path to write predictions.txt (submission.zip created alongside)",
     )
     parser.add_argument(
         "--beam_width", type=int, default=10,
@@ -224,4 +242,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     generate_submission(args.model_path, args.test_path,
-                        args.output, args.beam_width)
+                        args.output, args.beam_width, args.model_path2)
