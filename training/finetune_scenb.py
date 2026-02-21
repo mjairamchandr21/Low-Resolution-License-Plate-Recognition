@@ -59,7 +59,7 @@ model.load_state_dict(torch.load(checkpoint, map_location=DEVICE))
 print(f"Loaded checkpoint: {checkpoint}")
 
 # Fine-tune
-run_training(model, train_loader, val_loader, epochs=5, lr=1e-4, tag="scenB")
+run_training(model, train_loader, val_loader, epochs=30, lr=1e-4, tag="scenB")
 
 print(f"\nDone. Best Scenario-B model -> {SAVE_DIR}/crnn_best_scenB.pth")
 print("Use crnn_best_scenB.pth for submission.")
