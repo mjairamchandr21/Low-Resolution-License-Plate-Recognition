@@ -107,6 +107,11 @@ def generate_submission(model_path: str, test_path: str,
     print(f"Found {len(tracks)} test tracks  |  device={DEVICE}  |  "
           f"beam_width={beam_width}\n")
 
+    if len(tracks) == 0:
+        print(f"ERROR: No tracks found at: {test_path}")
+        print(f"Directory contents: {os.listdir(test_path) if os.path.exists(test_path) else 'PATH DOES NOT EXIST'}")
+        return
+
     rows          = []
     wrong_len     = 0
     len_enforced  = 0
@@ -151,8 +156,9 @@ def generate_submission(model_path: str, test_path: str,
     print(f"\n{'='*55}")
     print(f"Submission saved : {output_path}")
     print(f"Total tracks     : {len(rows)}")
-    print(f"Length-enforced  : {len_enforced} ({100*len_enforced/len(rows):.1f}%)")
-    print(f"Wrong length     : {wrong_len}  ({100*wrong_len/len(rows):.1f}%)")
+    if len(rows) > 0:
+        print(f"Length-enforced  : {len_enforced} ({100*len_enforced/len(rows):.1f}%)")
+        print(f"Wrong length     : {wrong_len}  ({100*wrong_len/len(rows):.1f}%)")
     print(f"{'='*55}")
     print("\nFirst 5 predictions:")
     for r in rows[:5]:
