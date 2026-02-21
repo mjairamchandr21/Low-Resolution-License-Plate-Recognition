@@ -169,7 +169,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--test_path", type=str,
-        default="/content/test_data/Pa7a3Hin-test-public",
+        default="/content/test/Pa7a3Hin-test-public",
         help="Path to extracted test folder containing track_XXXXX subdirs",
     )
     parser.add_argument(
