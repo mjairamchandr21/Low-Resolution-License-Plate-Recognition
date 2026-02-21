@@ -41,7 +41,7 @@ class LPRDataset(Dataset):
 
                     with open(ann_path, "r") as f:
                         ann = json.load(f)
-                        plate_text = ann["plate_text"].upper()
+                        plate_text = ann["plate_text"].upper().replace(" ", "")
 
                     for file in os.listdir(track_path):
                         if file.startswith("lr-") and file.endswith(".png"):
@@ -52,9 +52,15 @@ class LPRDataset(Dataset):
         return len(self.samples)
 
     def encode_text(self, text):
-        return torch.tensor([char_to_idx[c] for c in text], dtype=torch.long)
+        encoded = []
+        for c in text:
+            if c in char_to_idx:
+                encoded.append(char_to_idx[c])
+        # skip unknown chars silently
+        return torch.tensor(encoded, dtype=torch.long)
 
     def __getitem__(self, idx):
+        
         img_path, text = self.samples[idx]
 
         img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
@@ -68,5 +74,6 @@ class LPRDataset(Dataset):
         img = torch.tensor(img, dtype=torch.float32)
 
         text_encoded = self.encode_text(text)
-
+        if len(text_encoded) == 0:
+            raise ValueError(f"Empty label after encoding: {text}")
         return img, text_encoded, len(text_encoded)
