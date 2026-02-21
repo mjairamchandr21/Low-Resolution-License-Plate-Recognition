@@ -55,8 +55,10 @@ class LPRDataset(Dataset):
                         ann = json.load(f)
                         plate_text = ann["plate_text"].upper().replace(" ", "")
 
+                    IMAGE_EXTS = (".png", ".jpg", ".jpeg")
                     for file in os.listdir(track_path):
-                        if file.startswith("lr-") and file.endswith(".png"):
+                        if file.startswith("lr-") and \
+                                os.path.splitext(file)[1].lower() in IMAGE_EXTS:
                             img_path = os.path.join(track_path, file)
                             self.samples.append((img_path, plate_text))
 
