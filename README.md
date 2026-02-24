@@ -25,42 +25,6 @@ Transformer Encoder: Processes the sequence to understand character dependencies
 
 CTC Decoding: Translates the sequence into a final string.
 
-Installation
-Clone the repository:
-
-Bash
-git clone https://github.com/your-username/LPR-MultiFrame-SR.git
-cd LPR-MultiFrame-SR
-Install dependencies:
-
-Bash
-pip install torch torchvision tqdm opencv-python numpy
-
-Usage
-
-Data Preparation
-Organize your dataset following the structure:
-Plaintext
-data/
-├── Scenario-A/
-│   ├── Mercosur/
-│   │   └── track_00001/
-│   │       ├── lr_01.png ... lr_05.png
-│   │       ├── hr_01.png
-│   │       └── annotation.json
-
-Training
-Run the integrated training loop. This will save the best models to your specified path.
-
-Python
-# Initialize models and start joint training
-python train.py
-Inference & Submission
-To generate a submission file for a competition (e.g., Codabench):
-Python
-# Use the generate_submission function
-python predict.py --test_path ./test_data --model_path ./best_models/
-
 Metrics
 MSE (Mean Squared Error): Measures the reconstruction quality of the SR model.
 CTC Loss: Optimizes character alignment and recognition.
