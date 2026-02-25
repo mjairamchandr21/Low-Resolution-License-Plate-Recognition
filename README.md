@@ -15,12 +15,15 @@ Automated recognition of license plates in surveillance contexts is challenging 
 ## 🏗️ Core Methodology
 
 ### Model Architecture (`CRNN`)
+
 The core model is a Convolutional Recurrent Neural Network (CRNN):
+
 1.  **CNN Backbone**: 4-layer convolutional stack with Batch Normalization and Max-Pooling to extract high-level visual features.
 2.  **Recurrent Layers**: A 2-layer Bidirectional LSTM that models the horizontal dependencies between character segments.
 3.  **Head**: A fully connected classifier mapping recurrence outputs to character probabilities (36 classes: 0-9, A-Z + 1 blank).
 
 ### Training Strategy
+
 - **Phase 1 (Main)**: Training on the full dataset with aggressive augmentation to build a generalized feature extractor.
 - **Phase 2 (Fine-tune)**: Targeted fine-tuning on "Scenario-B" (public test domain) with a lower learning rate (1e-4) to close the domain gap.
 - **Augmentations**: To bridge the gap between clean training data and "low-res" (LR) test data, we simulate JPEG compression (40-85 quality), Gaussian noise, and blur directly in the data loader.
@@ -44,19 +47,25 @@ The core model is a Convolutional Recurrent Neural Network (CRNN):
 ## 📖 Usage Guide
 
 ### 1. Main Training
+
 Train the model on the full dataset (Scenario-A + B):
+
 ```bash
 python -m training.train
 ```
 
 ### 2. Scenario-B Fine-Tuning
+
 Refine the model for the target surveillance domain:
+
 ```bash
 python training/finetune_scenb.py
 ```
 
 ### 3. Generate Submission
+
 Process a test dataset and generate the `predictions.txt` and `submission.zip`:
+
 ```bash
 python generate_submission.py --model_path models/crnn_best_scenB.pth --test_path path/to/public_test --output submissions/submission.csv
 ```
